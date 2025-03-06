@@ -33,14 +33,13 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_TOKEN')]) {
-                        bat """
-                            echo ${DOCKER_TOKEN} | docker login -u ${DOCKER_USER} --password-stdin
-                        """
+                        bat "docker login -u %DOCKER_USER% -p %DOCKER_TOKEN%"
                         bat "docker push ${DOCKER_IMAGE}"
                     }
                 }
             }
         }
+
         stage('Deploy Application') {
             steps {
                 script {

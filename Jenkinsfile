@@ -2,48 +2,54 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "muhammadranaumerofficial754/flask-app:latest"
+        DOCKER_IMAGE = "murtazahasan/flask-app"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/umerfaro/mlops_assignment1.git']])
+                git branch: 'main', url: 'https://github.com/murtaza-hasan1/Assignment_1.git'
             }
         }
+
+        stage('Code Quality Check') {
+            steps {
+                bat 'pip install flake8'
+                bat 'flake8 --max-line-length=100'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                bat 'python -m unittest discover'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build(env.DOCKER_IMAGE)
-                }
+                bat 'docker build -t %DOCKER_IMAGE% .'
             }
         }
-        stage('Push to Docker Hub') {
+
+        stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
-                        dockerImage.push()
-                    }
-                }
+                bat 'docker login -u yourdockerhubusername -p yourdockerhubpassword'
+                bat 'docker push %DOCKER_IMAGE%'
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                bat 'docker run -d -p 5000:5000 %DOCKER_IMAGE%'
             }
         }
     }
+
     post {
         success {
-              emailext (
-                  to: 'i211185@nu.edu.pk',
-                  subject: "Deployment Successful",
-                body: "The master branch has been successfully deployed via Jenkins.",
-                  mimeType: 'text/html'
-              )
-          }
-          failure {
-              emailext (
-                  to: 'i211184@nu.edu.pk',
-                  subject: "Deployment Failed",
-                body: "There was an issue deploying the master branch. Please check the Jenkins logs.",
-                  mimeType: 'text/html'
-              )
-          }
+            mail to: 'i211137@nu.edu.pk',
+                 subject: 'Deployment Successful',
+                 body: 'The Flask app has been successfully deployed via Jenkins.'
+        }
     }
 }

@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/murtaza-hasan1/Assignment_1.git']])
+                git branch: 'main', url: 'https://github.com/murtaza-hasan1/Assignment_1.git'
             }
         }
         stage('Code Quality Check') {
@@ -25,8 +25,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = "murtazahasan/flask-app:latest"
-                    bat "docker build -t ${dockerImage} ."
+                    bat "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
@@ -34,7 +33,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        bat "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        bat "echo ${DOCKER_PASS} | docker login -u \"${DOCKER_USER}\" --password-stdin"
                         bat "docker push ${DOCKER_IMAGE}"
                     }
                 }
@@ -42,7 +41,9 @@ pipeline {
         }
         stage('Deploy Application') {
             steps {
-                bat 'docker run -d -p 5000:5000 murtazahasan/flask-app:latest'
+                bat 'docker stop flask-app || true'
+                bat 'docker rm flask-app || true'
+                bat 'docker run -d --name flask-app -p 5000:5000 murtazahasan/flask-app:latest'
             }
         }
     }
@@ -51,7 +52,7 @@ pipeline {
             emailext (
                 to: 'i211137@nu.edu.pk',
                 subject: "Deployment Successful",
-                body: "The master branch has been successfully deployed via Jenkins.",
+                body: "The **main** branch has been successfully deployed via Jenkins.",
                 mimeType: 'text/html'
             )
         }
@@ -59,7 +60,7 @@ pipeline {
             emailext (
                 to: 'i211137@nu.edu.pk',
                 subject: "Deployment Failed",
-                body: "There was an issue deploying the master branch. Please check the Jenkins logs.",
+                body: "There was an issue deploying the main branch. Please check the Jenkins logs.",
                 mimeType: 'text/html'
             )
         }

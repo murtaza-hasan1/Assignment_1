@@ -32,13 +32,13 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_TOKEN')]) {
-                        bat "docker login -u %DOCKER_USER% -p %DOCKER_TOKEN%"
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
                         bat "docker push ${DOCKER_IMAGE}"
                     }
                 }
             }
         }
+
 
         stage('Deploy Application') {
             steps {

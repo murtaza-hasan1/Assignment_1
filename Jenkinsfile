@@ -11,68 +11,55 @@ pipeline {
                 checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/murtaza-hasan1/Assignment_1.git']])
             }
         }
-
         stage('Code Quality Check') {
             steps {
-                script {
-                    sh 'pip install flake8'
-                    sh 'flake8 --max-line-length=100'
-                }
+                bat 'pip install flake8'
+                bat 'flake8 --max-line-length=100'
             }
         }
-
         stage('Run Unit Tests') {
             steps {
-                script {
-                    sh 'python -m unittest discover'
-                }
+                bat 'python -m unittest discover'
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build(env.DOCKER_IMAGE)
+                    dockerImage = "murtazahasan/flask-app:latest"
+                    bat "docker build -t ${dockerImage} ."
                 }
             }
         }
-
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                            dockerImage.push()
-                        }
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        bat "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        bat "docker push ${DOCKER_IMAGE}"
                     }
                 }
             }
         }
-
         stage('Deploy Application') {
             steps {
-                script {
-                    sh 'docker run -d -p 5000:5000 $DOCKER_IMAGE'
-                }
+                bat 'docker run -d -p 5000:5000 murtazahasan/flask-app:latest'
             }
         }
     }
-
     post {
         success {
-            emailext(
+            emailext (
                 to: 'i211137@nu.edu.pk',
                 subject: "Deployment Successful",
-                body: "The main branch has been successfully deployed via Jenkins.",
+                body: "The master branch has been successfully deployed via Jenkins.",
                 mimeType: 'text/html'
             )
         }
         failure {
-            emailext(
+            emailext (
                 to: 'i211137@nu.edu.pk',
                 subject: "Deployment Failed",
-                body: "There was an issue deploying the main branch. Please check the Jenkins logs.",
+                body: "There was an issue deploying the master branch. Please check the Jenkins logs.",
                 mimeType: 'text/html'
             )
         }

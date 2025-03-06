@@ -41,9 +41,9 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 script {
-                    // Stop and remove existing container
-                    bat 'docker stop flask-app || true'
-                    bat 'docker rm flask-app || true'
+                    // Stop and remove existing container, handling errors correctly on Windows
+                    bat 'docker stop flask-app || exit 0'
+                    bat 'docker rm flask-app || exit 0'
                     // Pull the image and run the container
                     bat "docker pull ${DOCKER_IMAGE}"
                     bat 'docker run -d --name flask-app -p 5000:5000 murtazahasan/flask-app:latest'

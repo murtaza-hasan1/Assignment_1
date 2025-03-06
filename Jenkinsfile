@@ -25,28 +25,28 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    bat "docker build -t ${DOCKER_IMAGE} ."
+                    docker.build("murtazahasan/flask-app:latest")
                 }
             }
         }
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
-                        bat "docker push ${DOCKER_IMAGE}"
+                    withDockerRegistry([credentialsId: 'docker-hub-credentials']) {
+                        docker.image("murtazahasan/flask-app:latest").push()
                     }
                 }
             }
         }
-
-
         stage('Deploy Application') {
             steps {
                 script {
-                    bat 'docker stop flask-app || exit 0'
-                    bat 'docker rm flask-app || exit 0'
-                    bat 'docker pull ${DOCKER_IMAGE}'
-                    bat 'docker run -d --name flask-app -p 5000:5000 ${DOCKER_IMAGE}'
+                    // Stop and remove existing container
+                    bat 'docker stop flask-app || true'
+                    bat 'docker rm flask-app || true'
+                    // Pull the image and run the container
+                    bat "docker pull ${DOCKER_IMAGE}"
+                    bat 'docker run -d --name flask-app -p 5000:5000 murtazahasan/flask-app:latest'
                 }
             }
         }
@@ -55,7 +55,7 @@ pipeline {
         success {
             emailext (
                 to: 'i211137@nu.edu.pk',
-                subject: "✅ Deployment Successful",
+                subject: "Deployment Successful",
                 body: "The **main** branch has been successfully deployed via Jenkins.",
                 mimeType: 'text/html'
             )
@@ -63,7 +63,7 @@ pipeline {
         failure {
             emailext (
                 to: 'i211137@nu.edu.pk',
-                subject: "❌ Deployment Failed",
+                subject: "Deployment Failed",
                 body: "There was an issue deploying the **main** branch. Please check the Jenkins logs.",
                 mimeType: 'text/html'
             )
